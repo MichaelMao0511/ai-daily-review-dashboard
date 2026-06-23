@@ -110,7 +110,7 @@ try {
     $deadline = (Get-Date).AddMinutes(5)
     do {
         try {
-            $response = Invoke-WebRequest -Uri "$siteUrl?v=$cacheKey" -UseBasicParsing -TimeoutSec 20
+            $response = Invoke-WebRequest -Uri "${siteUrl}?v=$cacheKey" -UseBasicParsing -TimeoutSec 20
             if ($response.StatusCode -eq 200 -and $response.Content.Contains($expectedMarker)) {
                 $verified = $true
                 break
