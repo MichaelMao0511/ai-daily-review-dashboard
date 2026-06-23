@@ -83,6 +83,22 @@ try {
         $siteHtml = $sourceHtml.Replace($charsetTag, "$charsetTag`r`n    $robotsMeta")
     }
 
+    $layoutMarker = "/* online-responsive-fix */"
+    if (-not $siteHtml.Contains($layoutMarker)) {
+        $layoutCss = @"
+$layoutMarker
+.tables,
+.table-section {
+  min-width: 0;
+}
+
+.table-scroll {
+  width: 100%;
+}
+"@
+        $siteHtml = $siteHtml.Replace("</style>", "$layoutCss`r`n</style>")
+    }
+
     $currentHtml = if (Test-Path -LiteralPath $indexPath -PathType Leaf) {
         [System.IO.File]::ReadAllText($indexPath, [System.Text.Encoding]::UTF8)
     } else {
@@ -111,7 +127,11 @@ try {
     do {
         try {
             $response = Invoke-WebRequest -Uri "${siteUrl}?v=$cacheKey" -UseBasicParsing -TimeoutSec 20
-            if ($response.StatusCode -eq 200 -and $response.Content.Contains($expectedMarker)) {
+            if (
+                $response.StatusCode -eq 200 -and
+                $response.Content.Contains($expectedMarker) -and
+                $response.Content.Contains($layoutMarker)
+            ) {
                 $verified = $true
                 break
             }
