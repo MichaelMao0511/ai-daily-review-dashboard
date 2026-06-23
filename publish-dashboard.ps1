@@ -10,8 +10,12 @@ $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 function Invoke-Git {
     param([Parameter(Mandatory = $true)][string[]]$Arguments)
 
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     $output = & git -C $projectRoot @Arguments 2>&1
-    if ($LASTEXITCODE -ne 0) {
+    $exitCode = $LASTEXITCODE
+    $ErrorActionPreference = $previousErrorActionPreference
+    if ($exitCode -ne 0) {
         throw "git $($Arguments -join ' ') failed: $($output -join [Environment]::NewLine)"
     }
 
