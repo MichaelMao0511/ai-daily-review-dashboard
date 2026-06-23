@@ -105,11 +105,12 @@ try {
 
     $commit = Invoke-Git -Arguments @("rev-parse", "HEAD")
     $expectedMarker = '"trade_date":"' + $tradeDate + '"'
+    $cacheKey = "$($commit.Substring(0, 12))-$(Get-Date -Format 'yyyyMMddHHmmss')"
     $verified = $false
     $deadline = (Get-Date).AddMinutes(5)
     do {
         try {
-            $response = Invoke-WebRequest -Uri "$siteUrl?v=$($commit.Substring(0, 12))" -UseBasicParsing -TimeoutSec 20
+            $response = Invoke-WebRequest -Uri "$siteUrl?v=$cacheKey" -UseBasicParsing -TimeoutSec 20
             if ($response.StatusCode -eq 200 -and $response.Content.Contains($expectedMarker)) {
                 $verified = $true
                 break
