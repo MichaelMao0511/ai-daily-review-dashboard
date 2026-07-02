@@ -705,16 +705,14 @@ const mainlineSections = [
   }
 ];
 
-const upRatioKey = "上涨比例";
-
 const marketChartSpecs = [
   {
     title: "中位数",
     series: [{ key: "中位数", label: "中位数", color: "#28705a" }]
   },
   {
-    title: "上涨比例",
-    series: [{ key: upRatioKey, label: "上涨比例", color: "#b34034" }]
+    title: "红盘家数",
+    series: [{ key: "红盘", label: "红盘", color: "#b34034" }]
   },
   {
     title: "涨停 / 跌停",
@@ -824,17 +822,7 @@ function parseNumber(value) {
   return match ? Number(match[0]) : null;
 }
 
-function upRatioValue(values) {
-  const red = parseNumber(values?.["红盘"]);
-  const green = parseNumber(values?.["绿盘"]);
-  const flat = parseNumber(values?.["平盘"]);
-  if (![red, green, flat].every((value) => value !== null && Number.isFinite(value))) return null;
-  const total = red + green + flat;
-  return total > 0 ? red / total * 100 : null;
-}
-
 function reviewValue(review, key) {
-  if (key === upRatioKey) return upRatioValue(review.values || {});
   return review.values?.[key];
 }
 
@@ -847,9 +835,15 @@ function latestValue(reviews, key) {
 }
 
 function formatLatestValue(value, key = "") {
-  if (key === upRatioKey && typeof value === "number" && Number.isFinite(value)) return `${value.toFixed(2)}%`;
   if (Array.isArray(value)) return valueLines(value).slice(0, 2).join(" / ");
   return isEmpty(value) ? "空" : String(value);
+}
+
+function chartPointTitle(review, series) {
+  const values = review.values || {};
+  const dateText = shortDate(review.trade_date || values["时间"]);
+  const valueText = formatLatestValue(reviewValue(review, series.key), series.key);
+  return `${dateText} ${series.label} ${valueText}`;
 }
 
 function formatAmountDelta(value) {
@@ -956,7 +950,7 @@ function renderLineChart(spec, reviews, options = {}) {
 
   valuesBySeries.forEach((series) => {
     const points = series.values
-      .map((value, index) => value === null || !Number.isFinite(value) ? null : { x: xScale(index), y: yScale(value) })
+      .map((value, index) => value === null || !Number.isFinite(value) ? null : { x: xScale(index), y: yScale(value), index })
       .filter(Boolean);
     if (!points.length) return;
     if (points.length >= 2) {
@@ -970,7 +964,11 @@ function renderLineChart(spec, reviews, options = {}) {
       }));
     }
     points.forEach((point) => {
-      svg.append(svgEl("circle", { cx: point.x, cy: point.y, r: points.length === 1 ? 4 : 2.6, fill: series.color }));
+      const circle = svgEl("circle", { cx: point.x, cy: point.y, r: points.length === 1 ? 4 : 2.6, fill: series.color });
+      const title = svgEl("title");
+      title.textContent = chartPointTitle(chronological[point.index], series);
+      circle.append(title);
+      svg.append(circle);
     });
   });
 
