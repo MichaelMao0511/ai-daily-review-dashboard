@@ -285,6 +285,7 @@ h3 {
 }
 
 .chart-body {
+  position: relative;
   min-height: 150px;
   min-width: 0;
   overflow: hidden;
@@ -318,6 +319,60 @@ h3 {
 
 .axis-label-end {
   text-anchor: end;
+}
+
+.chart-hit-area {
+  fill: transparent;
+  cursor: crosshair;
+  pointer-events: all;
+}
+
+.chart-tooltip {
+  position: absolute;
+  z-index: 5;
+  min-width: 118px;
+  max-width: 220px;
+  padding: 8px 10px;
+  border: 1px solid rgba(31, 37, 32, 0.16);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 20px rgba(31, 37, 32, 0.14);
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.35;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.chart-tooltip p {
+  margin: 0 0 5px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.chart-tooltip div {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-tooltip span {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.chart-tooltip b {
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart-tooltip strong {
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .chart-legend {
@@ -846,6 +901,16 @@ function chartPointTitle(review, series) {
   return `${dateText} ${series.label} ${valueText}`;
 }
 
+function buildChartTooltip(review, seriesList) {
+  const values = review.values || {};
+  const dateText = shortDate(review.trade_date || values["时间"]);
+  const lines = seriesList.map((series) => {
+    const value = formatLatestValue(reviewValue(review, series.key), series.key);
+    return `<div><span style="background:${series.color}"></span><b>${series.label}</b><strong>${value}</strong></div>`;
+  }).join("");
+  return `<p>${dateText}</p>${lines}`;
+}
+
 function formatAmountDelta(value) {
   if (value === null || !Number.isFinite(value)) return "空";
   const rounded = Math.round(value);
@@ -939,6 +1004,20 @@ function renderLineChart(spec, reviews, options = {}) {
   const xScale = (index) => pad.left + index * xStep;
 
   const svg = svgEl("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": spec.title });
+  const tooltip = document.createElement("div");
+  tooltip.className = "chart-tooltip";
+  tooltip.hidden = true;
+  const showTooltip = (index, event) => {
+    const bounds = container.getBoundingClientRect();
+    const left = Math.max(8, Math.min(bounds.width - 8, event.clientX - bounds.left));
+    tooltip.innerHTML = buildChartTooltip(chronological[index], spec.series);
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = "8px";
+    tooltip.hidden = false;
+  };
+  const hideTooltip = () => {
+    tooltip.hidden = true;
+  };
   [0.25, 0.5, 0.75].forEach((ratio) => {
     const y = pad.top + ratio * (height - pad.top - pad.bottom);
     svg.append(svgEl("line", { x1: pad.left, y1: y, x2: width - pad.right, y2: y, class: "grid-line" }));
@@ -979,7 +1058,33 @@ function renderLineChart(spec, reviews, options = {}) {
   const endLabel = svgEl("text", { x: width - pad.right, y: height - 8, class: "axis-label axis-label-end" });
   endLabel.textContent = shortDate(lastDate);
   svg.append(startLabel, endLabel);
-  container.append(svg);
+
+  chronological.forEach((review, index) => {
+    const left = index === 0 ? pad.left : xScale(index) - xStep / 2;
+    const right = index === chronological.length - 1 ? width - pad.right : xScale(index) + xStep / 2;
+    const hitArea = svgEl("rect", {
+      x: left,
+      y: pad.top,
+      width: Math.max(8, right - left),
+      height: height - pad.top - pad.bottom,
+      class: "chart-hit-area",
+      tabindex: 0,
+      "aria-label": chartPointTitle(review, spec.series[0])
+    });
+    hitArea.addEventListener("mousemove", (event) => showTooltip(index, event));
+    hitArea.addEventListener("mouseenter", (event) => showTooltip(index, event));
+    hitArea.addEventListener("mouseleave", hideTooltip);
+    hitArea.addEventListener("focus", () => {
+      tooltip.innerHTML = buildChartTooltip(review, spec.series);
+      tooltip.style.left = `${Math.min(container.clientWidth - 8, Math.max(8, xScale(index) / width * container.clientWidth))}px`;
+      tooltip.style.top = "14px";
+      tooltip.hidden = false;
+    });
+    hitArea.addEventListener("blur", hideTooltip);
+    svg.append(hitArea);
+  });
+
+  container.append(svg, tooltip);
   return container;
 }
 
