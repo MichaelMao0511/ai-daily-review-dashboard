@@ -767,7 +767,8 @@ const marketChartSpecs = [
   },
   {
     title: "红盘家数",
-    series: [{ key: "红盘", label: "红盘", color: "#b34034" }]
+    series: [{ key: "红盘", label: "红盘", color: "#b34034" }],
+    formatLatest: formatRedCountAndRatio
   },
   {
     title: "涨停 / 跌停",
@@ -892,6 +893,18 @@ function latestValue(reviews, key) {
 function formatLatestValue(value, key = "") {
   if (Array.isArray(value)) return valueLines(value).slice(0, 2).join(" / ");
   return isEmpty(value) ? "空" : String(value);
+}
+
+function formatRedCountAndRatio(reviews) {
+  const review = reviews.find((item) => !isEmpty(reviewValue(item, "红盘")));
+  if (!review) return "空";
+  const values = review.values || {};
+  const red = parseNumber(values["红盘"]);
+  const green = parseNumber(values["绿盘"]);
+  const flat = parseNumber(values["平盘"]);
+  const total = red + green + flat;
+  if (![red, green, flat].every(Number.isFinite) || total <= 0) return formatLatestValue(values["红盘"]);
+  return `${formatLatestValue(values["红盘"])} · 红盘比例 ${(red / total * 100).toFixed(1)}%`;
 }
 
 function chartPointTitle(review, series) {
@@ -1096,7 +1109,9 @@ function createChartCard(spec, reviews) {
   const title = document.createElement("h3");
   title.textContent = spec.title;
   const latest = document.createElement("strong");
-  latest.textContent = formatLatestValue(latestValue(reviews, spec.series[0].key), spec.series[0].key);
+  latest.textContent = spec.formatLatest
+    ? spec.formatLatest(reviews)
+    : formatLatestValue(latestValue(reviews, spec.series[0].key), spec.series[0].key);
   head.append(title, latest);
   card.append(head);
   if (spec.showAmountDeltas) card.append(createAmountDeltaStrip(reviews, spec.series[0].key));
