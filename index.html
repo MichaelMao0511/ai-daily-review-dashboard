@@ -898,13 +898,18 @@ function formatLatestValue(value, key = "") {
 function formatRedCountAndRatio(reviews) {
   const review = reviews.find((item) => !isEmpty(reviewValue(item, "红盘")));
   if (!review) return "空";
+  const ratio = formatRedRatio(review);
+  return ratio ? `${formatLatestValue(review.values?.["红盘"])} · 红盘比例 ${ratio}` : formatLatestValue(review.values?.["红盘"]);
+}
+
+function formatRedRatio(review) {
   const values = review.values || {};
   const red = parseNumber(values["红盘"]);
   const green = parseNumber(values["绿盘"]);
   const flat = parseNumber(values["平盘"]);
   const total = red + green + flat;
-  if (![red, green, flat].every(Number.isFinite) || total <= 0) return formatLatestValue(values["红盘"]);
-  return `${formatLatestValue(values["红盘"])} · 红盘比例 ${(red / total * 100).toFixed(1)}%`;
+  if (![red, green, flat].every(Number.isFinite) || total <= 0) return "";
+  return `${(red / total * 100).toFixed(1)}%`;
 }
 
 function chartPointTitle(review, series) {
@@ -919,7 +924,8 @@ function buildChartTooltip(review, seriesList) {
   const dateText = shortDate(review.trade_date || values["时间"]);
   const lines = seriesList.map((series) => {
     const value = formatLatestValue(reviewValue(review, series.key), series.key);
-    return `<div><span style="background:${series.color}"></span><b>${series.label}</b><strong>${value}</strong></div>`;
+    const ratio = series.key === "红盘" ? formatRedRatio(review) : "";
+    return `<div><span style="background:${series.color}"></span><b>${series.label}</b><strong>${value}${ratio ? ` · ${ratio}` : ""}</strong></div>`;
   }).join("");
   return `<p>${dateText}</p>${lines}`;
 }
