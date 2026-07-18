@@ -153,6 +153,8 @@ h3 {
 }
 
 .market-timing-matrix { display: grid; gap: 6px; }
+.timing-date-control { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+.timing-date-control select { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); padding: 4px 7px; font: inherit; }
 
 .timing-row {
   display: grid;
@@ -211,6 +213,7 @@ h3 {
 
 .timing-history-head { display: grid; gap: 4px; margin-bottom: 8px; }
 .timing-history-head span { color: var(--muted); font-size: 12px; }
+.zero-axis-label { fill: var(--muted); font-size: 11px; font-weight: 700; text-anchor: end; }
 
 .secondary-chart-panel {
   display: grid;
@@ -1095,8 +1098,9 @@ function renderLineChart(spec, reviews, options = {}) {
     return container;
   }
 
-  let min = spec.compactScale ? Math.min(...allValues) : Math.min(...allValues, 0);
-  let max = spec.compactScale ? Math.max(...allValues) : Math.max(...allValues, 0);
+  const includeZero = options.includeZero === true;
+  let min = spec.compactScale && !includeZero ? Math.min(...allValues) : Math.min(...allValues, 0);
+  let max = spec.compactScale && !includeZero ? Math.max(...allValues) : Math.max(...allValues, 0);
   if (min === max) {
     min -= 1;
     max += 1;
@@ -1130,6 +1134,11 @@ function renderLineChart(spec, reviews, options = {}) {
   if (min < 0 && max > 0) {
     const zeroY = yScale(0);
     svg.append(svgEl("line", { x1: pad.left, y1: zeroY, x2: width - pad.right, y2: zeroY, class: "zero-line" }));
+    if (includeZero) {
+      const zeroLabel = svgEl("text", { x: width - pad.right, y: zeroY - 5, class: "zero-axis-label" });
+      zeroLabel.textContent = "0轴";
+      svg.append(zeroLabel);
+    }
   }
 
   valuesBySeries.forEach((series) => {
@@ -1285,9 +1294,9 @@ function timingStateClass(state) {
   return state === "多" ? "timing-long" : state === "空" ? "timing-short" : "timing-flat";
 }
 
-function renderTimingHistory(rows, code) {
+function renderTimingHistory(rows, code, selectedDate) {
   const target = el("marketTimingHistory");
-  const selected = rows.filter((row) => row["指数代码"] === code).slice(-20);
+  const selected = rows.filter((row) => row["指数代码"] === code && row["日期"] <= selectedDate).slice(-20);
   const name = selected[0]?.["指数名称"] || code;
   const reviews = selected.map((row) => ({
     trade_date: row["日期"],
@@ -1311,7 +1320,7 @@ function renderTimingHistory(rows, code) {
       { key: "中期DIFF", label: "中期", color: "#a66a18" },
       { key: "短期DIFF", label: "短期", color: "#b34034" }
     ]
-  }, reviews, { width: 760, height: 220 }));
+  }, reviews, { width: 760, height: 220, includeZero: true }));
   target.hidden = false;
 }
 
@@ -1323,34 +1332,49 @@ function renderMarketTiming(payload) {
     panel.hidden = true;
     return;
   }
-  const latestRows = rows.filter((row) => row["日期"] === timing.target_date);
-  if (!latestRows.length) {
+  const dates = [...new Set(rows.map((row) => row["日期"]))].sort().reverse();
+  const select = el("marketTimingSelect");
+  select.innerHTML = "";
+  dates.forEach((date) => {
+    const option = document.createElement("option");
+    option.value = date;
+    option.textContent = shortDate(date);
+    option.selected = date === timing.target_date;
+    select.append(option);
+  });
+  const renderForDate = (selectedDate) => {
+    const latestRows = rows.filter((row) => row["日期"] === selectedDate);
+    if (!latestRows.length) return;
+    el("marketTimingDate").textContent = `${shortDate(selectedDate)} · Tushare 日线 · DIFF / 0轴`;
+    const target = el("marketTimingMatrix");
+    target.innerHTML = "";
+    const header = document.createElement("div");
+    header.className = "timing-row timing-header";
+    header.innerHTML = "<span>指数</span><span>长期 21/34</span><span>中期 5/13</span><span>短期 1/5</span>";
+    target.append(header);
+    latestRows.forEach((row) => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "timing-row timing-data-row";
+      const cells = ["长期", "中期", "短期"].map((period) => {
+        const state = row[`${period}状态`] || "平";
+        const diff = Number(row[`${period}DIFF`]);
+        const divergence = row[`${period}背离`];
+        return `<span class="timing-signal ${timingStateClass(state)}"><b>${state}</b><em>${Number.isFinite(diff) ? diff.toFixed(2) : "--"}</em>${divergence ? `<i>${divergence.replace("疑似", "")}</i>` : ""}</span>`;
+      });
+      item.innerHTML = `<strong>${row["指数名称"]}</strong>${cells.join("")}`;
+      item.addEventListener("click", () => renderTimingHistory(rows, row["指数代码"], selectedDate));
+      target.append(item);
+    });
+    renderTimingHistory(rows, latestRows[0]["指数代码"], selectedDate);
+  };
+  if (!dates.length) {
     panel.hidden = true;
     return;
   }
   panel.hidden = false;
-  el("marketTimingDate").textContent = `${shortDate(timing.target_date)} · Tushare 日线`;
-  const target = el("marketTimingMatrix");
-  target.innerHTML = "";
-  const header = document.createElement("div");
-  header.className = "timing-row timing-header";
-  header.innerHTML = "<span>指数</span><span>长期 21/34</span><span>中期 5/13</span><span>短期 1/5</span>";
-  target.append(header);
-  latestRows.forEach((row) => {
-    const item = document.createElement("button");
-    item.type = "button";
-    item.className = "timing-row timing-data-row";
-    const cells = ["长期", "中期", "短期"].map((period) => {
-      const state = row[`${period}状态`] || "平";
-      const diff = Number(row[`${period}DIFF`]);
-      const divergence = row[`${period}背离`];
-      return `<span class="timing-signal ${timingStateClass(state)}"><b>${state}</b><em>${Number.isFinite(diff) ? diff.toFixed(2) : "--"}</em>${divergence ? `<i>${divergence.replace("疑似", "")}</i>` : ""}</span>`;
-    });
-    item.innerHTML = `<strong>${row["指数名称"]}</strong>${cells.join("")}`;
-    item.addEventListener("click", () => renderTimingHistory(rows, row["指数代码"]));
-    target.append(item);
-  });
-  renderTimingHistory(rows, latestRows[0]["指数代码"]);
+  select.addEventListener("change", () => renderForDate(select.value));
+  renderForDate(timing.target_date);
 }
 
 function renderCell(value) {
@@ -1565,6 +1589,9 @@ if (document.readyState === "loading") {
         <section id="marketTimingPanel" class="market-timing-panel" hidden>
           <div class="section-title-row">
             <h2>市场时机模型</h2>
+            <label class="timing-date-control">日期
+              <select id="marketTimingSelect" aria-label="选择市场时机模型日期"></select>
+            </label>
             <span id="marketTimingDate">DIFF / 0轴</span>
           </div>
           <div id="marketTimingMatrix" class="market-timing-matrix"></div>
