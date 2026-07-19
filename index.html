@@ -480,15 +480,6 @@ h3 {
 .chart-event-marker { pointer-events: none; }
 .chart-event-candidate { fill: #fff; stroke: #8a5a9e; stroke-width: 2; }
 .chart-event-confirmed { fill: #315f8c; stroke: #fff; stroke-width: 1.5; }
-.chart-event-top-candidate-first,
-.chart-event-top-candidate-second { pointer-events: all; cursor: pointer; }
-.chart-event-top-candidate-first circle,
-.chart-event-top-candidate-second circle { fill: #fff; stroke: #7a6294; stroke-width: 2; }
-.chart-event-top-candidate-first:focus circle,
-.chart-event-top-candidate-second:focus circle { stroke: #d97706; stroke-width: 3; }
-.chart-event-top-label { fill: #7a6294; font-size: 9px; font-weight: 800; text-anchor: middle; pointer-events: none; }
-.chart-event-top-confirmed { fill: #111; stroke: #fff; stroke-width: 1.5; pointer-events: all; cursor: pointer; }
-.chart-event-top-confirmed:focus { outline: none; stroke: #d97706; stroke-width: 2.5; }
 .chart-event-bottom-confirmed { fill: #b34034; stroke: #fff; stroke-width: 1.5; pointer-events: all; cursor: pointer; }
 .chart-event-bottom-confirmed:focus { outline: none; stroke: #d97706; stroke-width: 2.5; }
 .chart-event-label { fill: #8a5a9e; font-size: 10px; font-weight: 700; text-anchor: middle; }
@@ -1249,34 +1240,6 @@ function bindChartEventActivation(marker, event, onSelect) {
 function renderChartEvent(svg, event, point, pad, onSelect) {
   const title = svgEl("title");
   title.textContent = event.label;
-  if (event.kind === "top-candidate-first" || event.kind === "top-candidate-second") {
-    const marker = svgEl("g", {
-      class: `chart-event-marker chart-event-${event.kind}`,
-      tabindex: 0,
-      role: "button",
-      "aria-label": event.label
-    });
-    const circle = svgEl("circle", { cx: point.x, cy: point.y, r: 7 });
-    const label = svgEl("text", { x: point.x, y: point.y + 3, class: "chart-event-top-label" });
-    label.textContent = event.kind === "top-candidate-first" ? "1" : "2";
-    bindChartEventActivation(marker, event, onSelect);
-    marker.append(circle, label, title);
-    svg.append(marker);
-    return;
-  }
-  if (event.kind === "top-confirmed") {
-    const marker = svgEl("path", {
-      d: `M ${point.x - 7} ${point.y - 7} L ${point.x + 7} ${point.y - 7} L ${point.x} ${point.y + 7} Z`,
-      class: "chart-event-marker chart-event-top-confirmed",
-      tabindex: 0,
-      role: "button",
-      "aria-label": event.label
-    });
-    bindChartEventActivation(marker, event, onSelect);
-    marker.append(title);
-    svg.append(marker);
-    return;
-  }
   if (event.kind === "bottom-confirmed") {
     const marker = svgEl("path", {
       d: `M ${point.x - 7} ${point.y + 7} L ${point.x + 7} ${point.y + 7} L ${point.x} ${point.y - 7} Z`,
@@ -1717,48 +1680,6 @@ function buildLongBottomEvents(rows) {
   return buildBottomEvents(rows, "长期", LONG_DIVERGENCE_WINDOW);
 }
 
-function buildLongTopEvents(rows) {
-  const events = [];
-  rows.forEach((row, index) => {
-    const close = parseNumber(row["收盘价"]);
-    if (!Number.isFinite(close)) return;
-    events.forEach((event) => {
-      if (event.invalidatedDate || row["日期"] <= event.candidateDate) return;
-      if (close > event.secondHigh) {
-        event.invalidatedDate = row["日期"];
-      } else if (!event.confirmedDate && event.reactionLow !== null && close < event.reactionLow) {
-        event.confirmedDate = row["日期"];
-      }
-    });
-    if (row["长期背离"] !== "疑似顶背离") return;
-
-    const start = Math.max(0, index - (LONG_DIVERGENCE_WINDOW - 1));
-    let firstHighIndex = -1;
-    let firstHigh = -Infinity;
-    for (let cursor = index - 1; cursor >= start; cursor -= 1) {
-      const priorClose = parseNumber(rows[cursor]["收盘价"]);
-      if (Number.isFinite(priorClose) && priorClose > firstHigh) {
-        firstHigh = priorClose;
-        firstHighIndex = cursor;
-      }
-    }
-    const pullbackCloses = rows
-      .slice(firstHighIndex + 1, index)
-      .map((item) => parseNumber(item["收盘价"]))
-      .filter(Number.isFinite);
-    const event = {
-      candidateDate: row["日期"],
-      firstHighDate: firstHighIndex >= 0 ? rows[firstHighIndex]["日期"] : "",
-      secondHigh: close,
-      reactionLow: pullbackCloses.length ? Math.min(...pullbackCloses) : null,
-      confirmedDate: "",
-      invalidatedDate: ""
-    };
-    events.push(event);
-  });
-  return events;
-}
-
 function timingTrend(rows) {
   if (!rows.length) return { label: "趋势待定", className: "trend-pending", events: [] };
   const index = rows.length - 1;
@@ -1887,31 +1808,6 @@ function chartEventsFromReboundBottom(events) {
   });
 }
 
-function chartEventsFromLongTop(events) {
-  return events
-    .filter((event) => event.confirmedDate && !event.invalidatedDate)
-    .flatMap((event) => [
-      {
-        date: event.firstHighDate,
-        kind: "top-candidate-first",
-        label: `${shortDate(event.firstHighDate)} 长期顶背离前高`,
-        seriesKey: "收盘价"
-      },
-      {
-        date: event.candidateDate,
-        kind: "top-candidate-second",
-        label: `${shortDate(event.candidateDate)} 长期顶背离第二高点`,
-        seriesKey: "收盘价"
-      },
-      {
-        date: event.confirmedDate,
-        kind: "top-confirmed",
-        label: `${shortDate(event.confirmedDate)} 长期顶背离确认`,
-        seriesKey: "收盘价"
-      }
-    ]);
-}
-
 function chartEventsFromLongBottom(events) {
   return events
     .filter((event) => event.confirmedDate && !event.invalidatedDate)
@@ -1950,24 +1846,13 @@ function timingEventEntries(events) {
 function timingDivergenceNotes(rows) {
   return rows
     .flatMap((row) => ["长期", "中期"].map((period) => (
-      row[`${period}背离`] ? `${shortDate(row["日期"])} ${period}${row[`${period}背离`]}` : ""
+      row[`${period}背离`] === "疑似底背离" ? `${shortDate(row["日期"])} ${period}疑似底背离` : ""
     )))
     .filter(Boolean);
 }
 
 function recentTimingDates(rows, days = VISIBLE_DIVERGENCE_DAYS) {
   return new Set(rows.slice(-days).map((row) => row["日期"]));
-}
-
-function activeLongTopConfirmations(rows) {
-  return buildLongTopEvents(rows)
-    .filter((event) => event.confirmedDate && !event.invalidatedDate);
-}
-
-function latestActiveLongTopConfirmation(rows) {
-  return activeLongTopConfirmations(rows)
-    .sort((left, right) => left.confirmedDate.localeCompare(right.confirmedDate))
-    .at(-1) || null;
 }
 
 function latestConfirmedEvent(events) {
@@ -1977,22 +1862,14 @@ function latestConfirmedEvent(events) {
     .at(-1) || null;
 }
 
-function timingSpecialEvents(topEvents, midBottomEvents, longBottomEvents) {
-  const activeTop = topEvents.filter((event) => (
-    event.confirmedDate
-    && !event.invalidatedDate
-    && !midBottomEvents.some((bottom) => bottom.confirmedDate && bottom.confirmedDate >= event.confirmedDate)
-  ));
+function timingSpecialEvents(midBottomEvents, longBottomEvents) {
   const activeMidBottom = midBottomEvents.filter((event) => (
     event.confirmedDate && !event.invalidatedDate && !event.completedDate
   ));
   const activeLongBottom = longBottomEvents.filter((event) => (
-    event.confirmedDate
-    && !event.invalidatedDate
-    && !topEvents.some((top) => top.confirmedDate && top.confirmedDate > event.confirmedDate)
+    event.confirmedDate && !event.invalidatedDate
   ));
   return [
-    ["long-top", latestConfirmedEvent(activeTop)],
     ["mid-bottom", latestConfirmedEvent(activeMidBottom)],
     ["long-bottom", latestConfirmedEvent(activeLongBottom)]
   ].flatMap(([type, event]) => event ? [{ type, ...event }] : []);
@@ -2000,7 +1877,6 @@ function timingSpecialEvents(topEvents, midBottomEvents, longBottomEvents) {
 
 function timingSpecialEventsForHistory(history) {
   return timingSpecialEvents(
-    buildLongTopEvents(history),
     buildReboundBottomEvents(history),
     buildLongBottomEvents(history)
   );
@@ -2019,11 +1895,6 @@ function timingSpecialStates(rows, selectedDate) {
 }
 
 function timingSpecialStateContent(event) {
-  if (event.type === "long-top") {
-    return {
-      summary: `${event.name}：长期顶背离，前高 ${shortDate(event.firstHighDate)} → 第二高点 ${shortDate(event.candidateDate)} → 确认 ${shortDate(event.confirmedDate)}`
-    };
-  }
   const label = event.type === "mid-bottom" ? "中期底背离" : "长期底背离";
   return {
     summary: `${event.name}：${label}，前低 ${shortDate(event.firstLowDate)} → 第二低点 ${shortDate(event.candidateDate)} → 确认 ${shortDate(event.confirmedDate)}`
@@ -2167,11 +2038,9 @@ function renderTimingTrend(rows, code, selectedDate, windowDays, onSelectEvent) 
   const points = timingPricePoints(history, windowDays);
   const phaseSegments = timingPhaseSegments(points);
   const pointDates = new Set(points.map((point) => point.date));
-  const topEvent = latestActiveLongTopConfirmation(history);
   const longBottomEvent = timingSpecialEventsForHistory(history)
     .find((event) => event.type === "long-bottom");
   const chartEvents = [
-    ...chartEventsFromLongTop(topEvent ? [topEvent] : []),
     ...chartEventsFromLongBottom(longBottomEvent ? [longBottomEvent] : [])
   ]
     .filter((event) => pointDates.has(event.date));
@@ -2500,16 +2369,12 @@ if (globalThis.__AI_DAILY_REVIEW_TEST__) {
     bindChartEventActivation,
     buildReboundBottomEvents,
     buildLongBottomEvents,
-    buildLongTopEvents,
-    activeLongTopConfirmations,
-    latestActiveLongTopConfirmation,
     timingSpecialStates,
     timingSpecialEvents,
     timingSpecialStateContent,
     toggledTimingLeftDate,
     chartEventsFromReboundBottom,
     chartEventsFromLongBottom,
-    chartEventsFromLongTop,
     timingEventEntries,
     timingTrend,
     timingPhase,
