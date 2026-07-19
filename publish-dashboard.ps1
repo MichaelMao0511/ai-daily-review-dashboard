@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
 $projectRoot = $PSScriptRoot
-$skillRoot = "C:\Users\Administrator\.codex\skills\ai-daily-review"
+$reviewProjectRoot = "D:\codex\traderecord"
 $indexPath = Join-Path $projectRoot "index.html"
 $siteUrl = "https://michaelmao0511.github.io/ai-daily-review-dashboard/"
 $expectedRemotePattern = "^(https://github\.com/|git@github\.com:)MichaelMao0511/ai-daily-review-dashboard(?:\.git)?$"
@@ -42,11 +42,10 @@ function Write-Result {
 }
 
 try {
-    $sourceFiles = @(Get-ChildItem -LiteralPath $skillRoot -Filter "*.html" -File)
-    if ($sourceFiles.Count -ne 1) {
-        throw "Expected exactly one dashboard HTML under $skillRoot, found $($sourceFiles.Count)"
+    $sourcePath = Join-Path $reviewProjectRoot "打开Ai每日复盘看板.html"
+    if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
+        throw "Dashboard source not found: $sourcePath"
     }
-    $sourcePath = $sourceFiles[0].FullName
 
     if (-not (Test-Path -LiteralPath (Join-Path $projectRoot ".git") -PathType Container)) {
         throw "Git repository not initialized: $projectRoot"
