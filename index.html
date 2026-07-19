@@ -221,7 +221,6 @@ h3 {
 .timing-advice-placeholder { margin-top: 8px; color: var(--muted); font-size: 12px; line-height: 1.45; }
 .timing-special-state { display: grid; gap: 5px; }
 .timing-special-event { color: var(--ink); }
-.timing-special-condition { margin-top: 2px; color: var(--muted); font-size: 11px; }
 
 .timing-data-row > strong {
   display: flex;
@@ -2019,25 +2018,15 @@ function timingSpecialStates(rows, selectedDate) {
   });
 }
 
-function formatTimingThreshold(value) {
-  const numeric = parseNumber(value);
-  return Number.isFinite(numeric) ? numeric.toFixed(2) : "--";
-}
-
 function timingSpecialStateContent(event) {
   if (event.type === "long-top") {
     return {
-      summary: `${event.name}：长期顶背离，前高 ${shortDate(event.firstHighDate)} → 第二高点 ${shortDate(event.candidateDate)} → 确认 ${shortDate(event.confirmedDate)}`,
-      condition: `消失条件：收盘 > ${formatTimingThreshold(event.secondHigh)}，或确认中期底背离`
+      summary: `${event.name}：长期顶背离，前高 ${shortDate(event.firstHighDate)} → 第二高点 ${shortDate(event.candidateDate)} → 确认 ${shortDate(event.confirmedDate)}`
     };
   }
   const label = event.type === "mid-bottom" ? "中期底背离" : "长期底背离";
-  const condition = event.type === "mid-bottom"
-    ? `消失条件：收盘 < ${formatTimingThreshold(event.secondLow)}，或长期转多`
-    : `消失条件：收盘 < ${formatTimingThreshold(event.secondLow)}，或确认长期顶背离`;
   return {
-    summary: `${event.name}：${label}，前低 ${shortDate(event.firstLowDate)} → 第二低点 ${shortDate(event.candidateDate)} → 确认 ${shortDate(event.confirmedDate)}`,
-    condition
+    summary: `${event.name}：${label}，前低 ${shortDate(event.firstLowDate)} → 第二低点 ${shortDate(event.candidateDate)} → 确认 ${shortDate(event.confirmedDate)}`
   };
 }
 
@@ -2053,11 +2042,8 @@ function renderTimingSpecialState(states) {
     const item = document.createElement("div");
     item.className = `timing-special-event timing-special-${event.type}`;
     const summary = document.createElement("div");
-    const condition = document.createElement("div");
     summary.textContent = content.summary;
-    condition.className = "timing-special-condition";
-    condition.textContent = content.condition;
-    item.append(summary, condition);
+    item.append(summary);
     target.append(item);
   });
 }
