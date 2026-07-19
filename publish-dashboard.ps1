@@ -42,7 +42,7 @@ function Write-Result {
 }
 
 try {
-    $sourcePath = Join-Path $reviewProjectRoot "打开Ai每日复盘看板.html"
+    $sourcePath = Join-Path $reviewProjectRoot "runtime\打开Ai每日复盘看板.html"
     if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
         throw "Dashboard source not found: $sourcePath"
     }
