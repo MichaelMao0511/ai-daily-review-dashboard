@@ -152,13 +152,26 @@ h3 {
   box-shadow: var(--shadow);
 }
 
-.market-timing-matrix { display: grid; gap: 6px; }
+.market-timing-layout { display: grid; grid-template-columns: minmax(0, 45fr) minmax(0, 55fr); gap: 16px; align-items: start; }
+.market-timing-left,
+.market-timing-matrix,
+.market-timing-charts { display: grid; gap: 6px; min-width: 0; }
+.market-timing-left { align-content: start; gap: 14px; }
+.market-timing-charts { gap: 16px; }
 .timing-date-control { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
-.timing-date-control select { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); padding: 4px 7px; font: inherit; }
+.timing-date-control select,
+.timing-date-control button,
+.timing-window-button { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); padding: 4px 7px; font: inherit; }
+.timing-date-control button { min-width: 28px; padding-inline: 5px; cursor: pointer; }
+.timing-date-control button:disabled,
+.timing-window-button:disabled { cursor: not-allowed; opacity: 0.42; }
+.timing-window-control { display: inline-flex; gap: 4px; }
+.timing-window-button { cursor: pointer; font-size: 12px; }
+.timing-window-button.is-selected { border-color: #9dbda9; background: #f1f7f3; color: #1d6a4e; font-weight: 700; }
 
 .timing-row {
   display: grid;
-  grid-template-columns: 130px repeat(3, minmax(0, 1fr));
+  grid-template-columns: 112px repeat(3, minmax(0, 1fr));
   gap: 6px;
   width: 100%;
   padding: 0;
@@ -175,6 +188,8 @@ h3 {
 }
 
 .timing-data-row { cursor: pointer; }
+.timing-data-row.is-selected > strong,
+.timing-data-row.is-selected .timing-signal { border-color: #9dbda9; background: #f1f7f3; }
 
 .timing-data-row > strong,
 .timing-signal {
@@ -184,6 +199,25 @@ h3 {
   padding: 6px 8px;
   background: var(--soft);
 }
+
+.timing-guidance-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.timing-guidance-panel section {
+  min-height: 74px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--soft);
+}
+
+.timing-guidance-panel strong { font-size: 13px; }
+.timing-special-state,
+.timing-advice-placeholder { margin-top: 8px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.timing-special-event { color: var(--ink); }
 
 .timing-data-row > strong {
   display: flex;
@@ -221,18 +255,22 @@ h3 {
 .trend-rising { background: #f8e3e0; color: #a53d32; }
 .trend-blocked { background: #f8ecd5; color: #986019; }
 .trend-falling { background: #e4f1e9; color: #1d6a4e; }
-.trend-rebound { background: #fcebea; color: #b34034; }
+.trend-rebound { background: #fff0df; color: #c26708; }
 .trend-pending { background: #ece9e2; color: var(--muted); }
 
-.market-timing-history {
-  max-width: 960px;
-  margin: 14px auto 0;
-  border-top: 1px solid var(--line);
-  padding-top: 12px;
-}
+.market-timing-trend,
+.market-timing-history { min-width: 0; }
 
 .timing-history-head { display: grid; gap: 4px; margin-bottom: 8px; }
 .timing-history-head span { color: var(--muted); font-size: 12px; }
+.timing-phase-guide { stroke: #b8af9d; stroke-dasharray: 4 4; stroke-width: 1; }
+.timing-phase-track-segment.trend-rising { fill: #f8e3e0; }
+.timing-phase-track-segment.trend-blocked { fill: #f8ecd5; }
+.timing-phase-track-segment.trend-falling { fill: #e4f1e9; }
+.timing-phase-track-segment.trend-rebound { fill: #fff0df; }
+.timing-phase-track-segment.trend-pending { fill: #ece9e2; }
+.timing-phase-track-label { fill: var(--ink); font-size: 10px; font-weight: 700; text-anchor: middle; pointer-events: none; }
+.chart-tooltip-extra { margin-top: 4px; color: var(--muted); }
 .timing-event-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 8px; margin-top: 8px; color: var(--muted); font-size: 11px; line-height: 1.35; }
 .timing-event-title { color: var(--ink); font-weight: 700; }
 .timing-event { padding: 1px 5px; border-radius: 4px; }
@@ -240,7 +278,10 @@ h3 {
 .timing-event-confirmed { color: #315f8c; background: #e2edf7; }
 .timing-event-invalidated { color: #77726c; background: #ece9e2; }
 .timing-event-empty { color: var(--muted); }
-.zero-axis-label { fill: var(--muted); font-size: 11px; font-weight: 700; text-anchor: end; }
+.zero-axis-label { fill: var(--muted); font-size: 11px; font-weight: 700; text-anchor: start; }
+.chart-value-axis { stroke: var(--line); stroke-width: 1; }
+.chart-value-axis-tick { stroke: var(--muted); stroke-width: 1; }
+.chart-value-axis-label { fill: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
 
 .secondary-chart-panel {
   display: grid;
@@ -429,6 +470,8 @@ h3 {
 .chart-event-marker { pointer-events: none; }
 .chart-event-candidate { fill: #fff; stroke: #8a5a9e; stroke-width: 2; }
 .chart-event-confirmed { fill: #315f8c; stroke: #fff; stroke-width: 1.5; }
+.chart-event-top-confirmed { fill: #111; stroke: #fff; stroke-width: 1.5; pointer-events: all; cursor: pointer; }
+.chart-event-top-confirmed:focus { outline: none; stroke: #d97706; stroke-width: 2.5; }
 .chart-event-label { fill: #8a5a9e; font-size: 10px; font-weight: 700; text-anchor: middle; }
 .chart-event-confirmed-label { fill: #315f8c; }
 
@@ -748,6 +791,18 @@ summary {
 
   .market-timing-panel {
     padding: 14px;
+  }
+
+  .market-timing-panel .section-title-row {
+    flex-wrap: wrap;
+  }
+
+  .market-timing-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .timing-guidance-panel {
+    grid-template-columns: 1fr;
   }
 
   .timing-row {
@@ -1144,9 +1199,34 @@ function eventsForDate(events, review) {
   return events.filter((event) => event.date === date);
 }
 
-function renderChartEvent(svg, event, point, pad) {
+function bindChartEventActivation(marker, event, onSelect) {
+  const activate = () => {
+    if (typeof onSelect === "function") onSelect(event);
+  };
+  marker.addEventListener("click", activate);
+  marker.addEventListener("keydown", (keyEvent) => {
+    if (keyEvent.key !== "Enter" && keyEvent.key !== " ") return;
+    keyEvent.preventDefault();
+    activate();
+  });
+}
+
+function renderChartEvent(svg, event, point, pad, onSelect) {
   const title = svgEl("title");
   title.textContent = event.label;
+  if (event.kind === "top-confirmed") {
+    const marker = svgEl("path", {
+      d: `M ${point.x - 7} ${point.y - 7} L ${point.x + 7} ${point.y - 7} L ${point.x} ${point.y + 7} Z`,
+      class: "chart-event-marker chart-event-top-confirmed",
+      tabindex: 0,
+      role: "button",
+      "aria-label": event.label
+    });
+    bindChartEventActivation(marker, event, onSelect);
+    marker.append(title);
+    svg.append(marker);
+    return;
+  }
   if (event.kind === "confirmed") {
     const marker = svgEl("path", {
       d: `M ${point.x} ${pad.top + 2} L ${point.x + 5} ${pad.top + 7} L ${point.x} ${pad.top + 12} L ${point.x - 5} ${pad.top + 7} Z`,
@@ -1164,9 +1244,11 @@ function renderChartEvent(svg, event, point, pad) {
 function renderLineChart(spec, reviews, options = {}) {
   const chronological = [...reviews].reverse();
   const chartEvents = Array.isArray(spec.events) ? spec.events : [];
+  const phaseSegments = Array.isArray(spec.phaseSegments) ? spec.phaseSegments : [];
+  const showPhaseTrack = spec.showPhaseTrack === true && phaseSegments.length > 0;
   const width = options.width || 360;
   const height = options.height || 170;
-  const pad = { left: 32, right: 60, top: 14, bottom: 28 };
+  const pad = { left: 32, right: 60, top: 14, bottom: showPhaseTrack ? 58 : 28 };
   const valuesBySeries = spec.series.map((series) => ({
     ...series,
     values: chronological.map((review) => parseNumber(reviewValue(review, series.key)))
@@ -1180,8 +1262,9 @@ function renderLineChart(spec, reviews, options = {}) {
   }
 
   const includeZero = options.includeZero === true;
-  let min = spec.compactScale && !includeZero ? Math.min(...allValues) : Math.min(...allValues, 0);
-  let max = spec.compactScale && !includeZero ? Math.max(...allValues) : Math.max(...allValues, 0);
+  const compactScale = spec.compactScale || options.compactScale;
+  let min = compactScale && !includeZero ? Math.min(...allValues) : Math.min(...allValues, 0);
+  let max = compactScale && !includeZero ? Math.max(...allValues) : Math.max(...allValues, 0);
   if (min === max) {
     min -= 1;
     max += 1;
@@ -1197,10 +1280,18 @@ function renderLineChart(spec, reviews, options = {}) {
   const tooltip = document.createElement("div");
   tooltip.className = "chart-tooltip";
   tooltip.hidden = true;
+  const tooltipContent = (review) => {
+    const extra = typeof spec.tooltipExtra === "function" ? spec.tooltipExtra(review) : "";
+    const content = buildChartTooltip(review, spec.series, eventsForDate(chartEvents, review));
+    return extra ? `${content}<div class="chart-tooltip-extra">${extra}</div>` : content;
+  };
+  const pointLabel = (review, series) => (
+    typeof spec.pointLabel === "function" ? spec.pointLabel(review, series) : chartPointTitle(review, series)
+  );
   const showTooltip = (index, event) => {
     const bounds = container.getBoundingClientRect();
     const left = Math.max(8, Math.min(bounds.width - 8, event.clientX - bounds.left));
-    tooltip.innerHTML = buildChartTooltip(chronological[index], spec.series, eventsForDate(chartEvents, chronological[index]));
+    tooltip.innerHTML = tooltipContent(chronological[index]);
     tooltip.style.left = `${left}px`;
     tooltip.style.top = "8px";
     tooltip.hidden = false;
@@ -1212,14 +1303,46 @@ function renderLineChart(spec, reviews, options = {}) {
     const y = pad.top + ratio * (height - pad.top - pad.bottom);
     svg.append(svgEl("line", { x1: pad.left, y1: y, x2: width - pad.right, y2: y, class: "grid-line" }));
   });
+  phaseSegments.slice(1).forEach((segment) => {
+    const x = xScale(segment.start);
+    svg.append(svgEl("line", {
+      x1: x,
+      y1: pad.top,
+      x2: x,
+      y2: height - pad.bottom,
+      class: "timing-phase-guide"
+    }));
+  });
   if (min < 0 && max > 0) {
     const zeroY = yScale(0);
     svg.append(svgEl("line", { x1: pad.left, y1: zeroY, x2: width - pad.right, y2: zeroY, class: "zero-line" }));
     if (includeZero) {
-      const zeroLabel = svgEl("text", { x: width - pad.right, y: zeroY - 5, class: "zero-axis-label" });
+      const zeroLabel = svgEl("text", { x: width - pad.right + 6, y: zeroY - 5, class: "zero-axis-label" });
       zeroLabel.textContent = "0轴";
       svg.append(zeroLabel);
     }
+  }
+  if (options.showValueAxis === true) {
+    svg.append(svgEl("line", {
+      x1: width - pad.right,
+      y1: pad.top,
+      x2: width - pad.right,
+      y2: height - pad.bottom,
+      class: "chart-value-axis"
+    }));
+    timingValueAxisTicks(allValues).forEach((tick) => {
+      const y = yScale(tick.value);
+      svg.append(svgEl("line", {
+        x1: width - pad.right,
+        y1: y,
+        x2: width - pad.right + 4,
+        y2: y,
+        class: "chart-value-axis-tick"
+      }));
+      const label = svgEl("text", { x: width - pad.right + 7, y: y + 4, class: "chart-value-axis-label" });
+      label.textContent = tick.label;
+      svg.append(label);
+    });
   }
 
   valuesBySeries.forEach((series) => {
@@ -1228,39 +1351,70 @@ function renderLineChart(spec, reviews, options = {}) {
       .filter(Boolean);
     if (!points.length) return;
     if (points.length >= 2) {
-      svg.append(svgEl("path", {
-        d: pathFromPoints(points),
-        fill: "none",
-        stroke: series.color,
-        "stroke-width": 2.4,
-        "stroke-linecap": "round",
-        "stroke-linejoin": "round"
-      }));
+      if (typeof series.segmentColor === "function") {
+        points.slice(1).forEach((point, index) => {
+          svg.append(svgEl("path", {
+            d: pathFromPoints([points[index], point]),
+            fill: "none",
+            stroke: series.segmentColor(chronological[point.index]),
+            "stroke-width": 2.4,
+            "stroke-linecap": "round",
+            "stroke-linejoin": "round"
+          }));
+        });
+      } else {
+        svg.append(svgEl("path", {
+          d: pathFromPoints(points),
+          fill: "none",
+          stroke: series.color,
+          "stroke-width": 2.4,
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round"
+        }));
+      }
     }
     points.forEach((point) => {
-      const circle = svgEl("circle", { cx: point.x, cy: point.y, r: points.length === 1 ? 4 : 2.6, fill: series.color });
+      const color = typeof series.segmentColor === "function" ? series.segmentColor(chronological[point.index]) : series.color;
+      const circle = svgEl("circle", { cx: point.x, cy: point.y, r: points.length === 1 ? 4 : 2.6, fill: color });
       const title = svgEl("title");
-      title.textContent = chartPointTitle(chronological[point.index], series);
+      title.textContent = pointLabel(chronological[point.index], series);
       circle.append(title);
       svg.append(circle);
     });
   });
 
-  chartEvents.forEach((event) => {
-    const index = chronological.findIndex((review) => (review.trade_date || review.values?.["时间"]) === event.date);
-    const series = valuesBySeries.find((item) => item.key === (event.seriesKey || "长期DIFF"));
-    const value = series?.values[index];
-    if (index < 0 || !Number.isFinite(value)) return;
-    renderChartEvent(svg, event, { x: xScale(index), y: yScale(value) }, pad);
-  });
-
   const firstDate = chronological[0]?.trade_date || chronological[0]?.values?.["时间"] || "";
   const lastDate = chronological[chronological.length - 1]?.trade_date || chronological[chronological.length - 1]?.values?.["时间"] || "";
-  const startLabel = svgEl("text", { x: pad.left, y: height - 8, class: "axis-label" });
+  const axisLabelY = showPhaseTrack ? height - 30 : height - 8;
+  const startLabel = svgEl("text", { x: pad.left, y: axisLabelY, class: "axis-label" });
   startLabel.textContent = shortDate(firstDate);
-  const endLabel = svgEl("text", { x: width - pad.right, y: height - 8, class: "axis-label axis-label-end" });
+  const endLabel = svgEl("text", { x: width - pad.right, y: axisLabelY, class: "axis-label axis-label-end" });
   endLabel.textContent = shortDate(lastDate);
   svg.append(startLabel, endLabel);
+  if (showPhaseTrack) {
+    const trackY = height - 21;
+    timingPhaseTrackGeometry(phaseSegments, xScale, width - pad.right).forEach((segment) => {
+      const block = svgEl("rect", {
+        x: segment.x1,
+        y: trackY,
+        width: Math.max(1, segment.x2 - segment.x1),
+        height: 16,
+        class: `timing-phase-track-segment ${segment.className}`
+      });
+      const title = svgEl("title");
+      title.textContent = `${segment.label} · ${segment.length}日`;
+      block.append(title);
+      svg.append(block);
+      if (!segment.showLabel) return;
+      const label = svgEl("text", {
+        x: (segment.x1 + segment.x2) / 2,
+        y: trackY + 11,
+        class: "timing-phase-track-label"
+      });
+      label.textContent = segment.label;
+      svg.append(label);
+    });
+  }
 
   chronological.forEach((review, index) => {
     const left = index === 0 ? pad.left : xScale(index) - xStep / 2;
@@ -1272,19 +1426,27 @@ function renderLineChart(spec, reviews, options = {}) {
       height: height - pad.top - pad.bottom,
       class: "chart-hit-area",
       tabindex: 0,
-      "aria-label": chartPointTitle(review, spec.series[0])
+      "aria-label": pointLabel(review, spec.series[0])
     });
     hitArea.addEventListener("mousemove", (event) => showTooltip(index, event));
     hitArea.addEventListener("mouseenter", (event) => showTooltip(index, event));
     hitArea.addEventListener("mouseleave", hideTooltip);
     hitArea.addEventListener("focus", () => {
-      tooltip.innerHTML = buildChartTooltip(review, spec.series, eventsForDate(chartEvents, review));
+      tooltip.innerHTML = tooltipContent(review);
       tooltip.style.left = `${Math.min(container.clientWidth - 8, Math.max(8, xScale(index) / width * container.clientWidth))}px`;
       tooltip.style.top = "14px";
       tooltip.hidden = false;
     });
     hitArea.addEventListener("blur", hideTooltip);
     svg.append(hitArea);
+  });
+
+  chartEvents.forEach((event) => {
+    const index = chronological.findIndex((review) => (review.trade_date || review.values?.["时间"]) === event.date);
+    const series = valuesBySeries.find((item) => item.key === (event.seriesKey || "长期DIFF"));
+    const value = series?.values[index];
+    if (index < 0 || !Number.isFinite(value)) return;
+    renderChartEvent(svg, event, { x: xScale(index), y: yScale(value) }, pad, spec.onEventSelect);
   });
 
   container.append(svg, tooltip);
@@ -1383,8 +1545,12 @@ function timingStateClass(state) {
   return state === "多" ? "timing-long" : state === "空" ? "timing-short" : "timing-flat";
 }
 
-const TIMING_HISTORY_DAYS = 40;
+const TIMING_WINDOW_OPTIONS = [20, 60, 120];
+const DEFAULT_TIMING_WINDOW = 60;
 const LONG_DIVERGENCE_WINDOW = 55;
+const REBOUND_DIVERGENCE_PERIOD = "中期";
+const REBOUND_DIVERGENCE_WINDOW = 20;
+const VISIBLE_DIVERGENCE_DAYS = 20;
 
 function timingRowsForCode(rows, code, selectedDate) {
   return rows
@@ -1401,7 +1567,7 @@ function resolvedTimingState(rows, index, period) {
   return "";
 }
 
-function buildLongBottomEvents(rows) {
+function buildReboundBottomEvents(rows) {
   const events = [];
   let active = null;
   rows.forEach((row, index) => {
@@ -1414,9 +1580,9 @@ function buildLongBottomEvents(rows) {
     if (active && !active.confirmedDate && active.reactionHigh !== null && close > active.reactionHigh) {
       active.confirmedDate = row["日期"];
     }
-    if (row["长期背离"] !== "疑似底背离") return;
+    if (row[`${REBOUND_DIVERGENCE_PERIOD}背离`] !== "疑似底背离") return;
 
-    const start = Math.max(0, index - (LONG_DIVERGENCE_WINDOW - 1));
+    const start = Math.max(0, index - (REBOUND_DIVERGENCE_WINDOW - 1));
     let firstLowIndex = -1;
     let firstLow = Infinity;
     for (let cursor = index - 1; cursor >= start; cursor -= 1) {
@@ -1444,12 +1610,55 @@ function buildLongBottomEvents(rows) {
   return events;
 }
 
+function buildLongTopEvents(rows) {
+  const events = [];
+  let active = null;
+  rows.forEach((row, index) => {
+    const close = parseNumber(row["收盘价"]);
+    if (!Number.isFinite(close)) return;
+    if (active && close > active.secondHigh) {
+      active.invalidatedDate = row["日期"];
+      active = null;
+    }
+    if (active && !active.confirmedDate && active.reactionLow !== null && close < active.reactionLow) {
+      active.confirmedDate = row["日期"];
+    }
+    if (row["长期背离"] !== "疑似顶背离") return;
+
+    const start = Math.max(0, index - (LONG_DIVERGENCE_WINDOW - 1));
+    let firstHighIndex = -1;
+    let firstHigh = -Infinity;
+    for (let cursor = index - 1; cursor >= start; cursor -= 1) {
+      const priorClose = parseNumber(rows[cursor]["收盘价"]);
+      if (Number.isFinite(priorClose) && priorClose > firstHigh) {
+        firstHigh = priorClose;
+        firstHighIndex = cursor;
+      }
+    }
+    const pullbackCloses = rows
+      .slice(firstHighIndex + 1, index)
+      .map((item) => parseNumber(item["收盘价"]))
+      .filter(Number.isFinite);
+    const event = {
+      candidateDate: row["日期"],
+      firstHighDate: firstHighIndex >= 0 ? rows[firstHighIndex]["日期"] : "",
+      secondHigh: close,
+      reactionLow: pullbackCloses.length ? Math.min(...pullbackCloses) : null,
+      confirmedDate: "",
+      invalidatedDate: ""
+    };
+    events.push(event);
+    active = event;
+  });
+  return events;
+}
+
 function timingTrend(rows) {
   if (!rows.length) return { label: "趋势待定", className: "trend-pending", events: [] };
   const index = rows.length - 1;
   const longState = resolvedTimingState(rows, index, "长期");
   const midState = resolvedTimingState(rows, index, "中期");
-  const events = buildLongBottomEvents(rows);
+  const events = buildReboundBottomEvents(rows);
   if (!longState || !midState) return { label: "趋势待定", className: "trend-pending", events };
   if (longState === "多" && midState === "多") return { label: "上升趋势", className: "trend-rising", events };
   if (longState === "多") return { label: "升势受阻", className: "trend-blocked", events };
@@ -1459,35 +1668,168 @@ function timingTrend(rows) {
     : { label: "下降趋势", className: "trend-falling", events };
 }
 
-function chartEventsFromLongBottom(events) {
+function timingTrendColor(label) {
+  if (label === "上升趋势") return "#b34034";
+  if (label === "尝试反弹") return "#d97706";
+  return "#28705a";
+}
+
+function timingPhase(rows) {
+  const trend = timingTrend(rows);
+  const index = rows.length - 1;
+  const state = (period) => index >= 0 ? resolvedTimingState(rows, index, period) || "平" : "平";
+  return {
+    ...trend,
+    longState: state("长期"),
+    midState: state("中期"),
+    shortState: state("短期")
+  };
+}
+
+function timingWindowDays(requestedDays, historyCount) {
+  const available = TIMING_WINDOW_OPTIONS.filter((days) => days <= historyCount);
+  return available.includes(requestedDays) ? requestedDays : available.at(-1) || historyCount;
+}
+
+function timingDateNavigation(dates, selectedDate) {
+  const index = dates.indexOf(selectedDate);
+  return {
+    previous: index >= 0 ? dates[index + 1] || "" : "",
+    next: index > 0 ? dates[index - 1] || "" : ""
+  };
+}
+
+function timingTrendClass(label) {
+  return label === "上升趋势" ? "trend-rising"
+    : label === "升势受阻" ? "trend-blocked"
+      : label === "尝试反弹" ? "trend-rebound"
+        : label === "下降趋势" ? "trend-falling"
+          : "trend-pending";
+}
+
+function timingPricePoints(rows, windowDays = DEFAULT_TIMING_WINDOW) {
+  const start = Math.max(0, rows.length - windowDays);
+  return rows.slice(start).map((row, index) => {
+    const trend = timingTrend(rows.slice(0, start + index + 1)).label;
+    return {
+      date: row["日期"],
+      close: row["收盘价"],
+      trend,
+      color: timingTrendColor(trend)
+    };
+  });
+}
+
+function timingPhaseSegments(points, labelDays = 5) {
+  const segments = [];
+  points.forEach((point, index) => {
+    const current = segments[segments.length - 1];
+    if (current && current.label === point.trend) {
+      current.end = index;
+      current.length += 1;
+      return;
+    }
+    segments.push({
+      label: point.trend,
+      className: timingTrendClass(point.trend),
+      start: index,
+      end: index,
+      length: 1,
+      showLabel: false
+    });
+  });
+  return segments.map((segment) => ({ ...segment, showLabel: segment.length >= labelDays }));
+}
+
+function timingPhaseTrackGeometry(segments, xScale, rightEdge) {
+  return segments.map((segment, index) => ({
+    ...segment,
+    x1: xScale(segment.start),
+    x2: index < segments.length - 1 ? xScale(segments[index + 1].start) : rightEdge
+  }));
+}
+
+function timingValueAxisTicks(values) {
+  const finiteValues = values.filter((value) => Number.isFinite(value));
+  if (!finiteValues.length) return [];
+  const minimum = Math.min(...finiteValues);
+  const maximum = Math.max(...finiteValues);
+  return [maximum, (maximum + minimum) / 2, minimum].map((value) => ({
+    value,
+    label: String(Math.round(value))
+  }));
+}
+
+function chartEventsFromReboundBottom(events) {
   return events.flatMap((event) => {
     if (event.invalidatedDate) return [];
-    const markers = [{ date: event.candidateDate, kind: "candidate", label: "底背离候选", seriesKey: "长期DIFF" }];
+    const markers = [{ date: event.candidateDate, kind: "candidate", label: "中期底背离候选", seriesKey: "中期DIFF" }];
     if (event.confirmedDate) {
-      markers.push({ date: event.confirmedDate, kind: "confirmed", label: "确认→尝试反弹", seriesKey: "长期DIFF" });
+      markers.push({ date: event.confirmedDate, kind: "confirmed", label: "中期确认→尝试反弹", seriesKey: "中期DIFF" });
     }
     return markers;
   });
+}
+
+function chartEventsFromLongTop(events) {
+  return events
+    .filter((event) => event.confirmedDate && !event.invalidatedDate)
+    .map((event) => ({
+      date: event.confirmedDate,
+      candidateDate: event.candidateDate,
+      kind: "top-confirmed",
+      label: `${shortDate(event.confirmedDate)} 长期顶背离确认（候选 ${shortDate(event.candidateDate)}）`,
+      seriesKey: "收盘价"
+    }));
 }
 
 function timingEventEntries(events) {
   return events.flatMap((event) => {
     if (event.invalidatedDate) {
       return [{
-        date: event.candidateDate,
+        date: event.invalidatedDate,
         kind: "invalidated",
-        label: `${shortDate(event.candidateDate)} 底背离候选，${shortDate(event.invalidatedDate)} 已失效`
+        label: `${shortDate(event.candidateDate)} 中期底背离候选，${shortDate(event.invalidatedDate)} 已失效`
       }];
     }
-    const entries = [{ date: event.candidateDate, kind: "candidate", label: `${shortDate(event.candidateDate)} 底背离候选` }];
+    const entries = [{ date: event.candidateDate, kind: "candidate", label: `${shortDate(event.candidateDate)} 中期底背离候选` }];
     if (event.confirmedDate) {
-      entries.push({ date: event.confirmedDate, kind: "confirmed", label: `${shortDate(event.confirmedDate)} 确认反弹` });
+      entries.push({ date: event.confirmedDate, kind: "confirmed", label: `${shortDate(event.confirmedDate)} 中期确认反弹` });
     }
     return entries;
   });
 }
 
-function createTimingEventStrip(entries) {
+function timingDivergenceNotes(rows) {
+  return rows
+    .flatMap((row) => ["长期", "中期"].map((period) => (
+      row[`${period}背离`] ? `${shortDate(row["日期"])} ${period}${row[`${period}背离`]}` : ""
+    )))
+    .filter(Boolean);
+}
+
+function recentTimingDates(rows, days = VISIBLE_DIVERGENCE_DAYS) {
+  return new Set(rows.slice(-days).map((row) => row["日期"]));
+}
+
+function activeLongTopConfirmations(rows, days = VISIBLE_DIVERGENCE_DAYS) {
+  const visibleDates = recentTimingDates(rows, days);
+  return buildLongTopEvents(rows)
+    .filter((event) => event.confirmedDate && !event.invalidatedDate && visibleDates.has(event.confirmedDate));
+}
+
+function renderTimingSpecialState(events) {
+  const target = el("marketTimingSpecialState");
+  target.innerHTML = "";
+  events.forEach((event) => {
+    const item = document.createElement("div");
+    item.className = "timing-special-event";
+    item.textContent = `长期顶背离确认：候选 ${shortDate(event.candidateDate)} → 确认 ${shortDate(event.confirmedDate)}`;
+    target.append(item);
+  });
+}
+
+function createTimingEventStrip(entries, windowDays) {
   const strip = document.createElement("div");
   strip.className = "timing-event-strip";
   const title = document.createElement("span");
@@ -1497,7 +1839,7 @@ function createTimingEventStrip(entries) {
   if (!entries.length) {
     const empty = document.createElement("span");
     empty.className = "timing-event-empty";
-    empty.textContent = "近40日无底背离事件";
+    empty.textContent = `近${windowDays}日无底背离事件`;
     strip.append(empty);
     return strip;
   }
@@ -1510,16 +1852,19 @@ function createTimingEventStrip(entries) {
   return strip;
 }
 
-function renderTimingHistory(rows, code, selectedDate) {
+function renderTimingHistory(rows, code, selectedDate, windowDays) {
   const target = el("marketTimingHistory");
   const history = timingRowsForCode(rows, code, selectedDate);
-  const selected = history.slice(-TIMING_HISTORY_DAYS);
+  const selected = history.slice(-windowDays);
+  const recentRows = history.slice(-VISIBLE_DIVERGENCE_DAYS);
+  const visibleDates = recentTimingDates(history);
+  const selectedDates = new Set(selected.map((row) => row["日期"]));
   const name = selected[0]?.["指数名称"] || code;
   const trend = timingTrend(history);
-  const chartEvents = chartEventsFromLongBottom(trend.events)
-    .filter((event) => selected.some((row) => row["日期"] === event.date));
+  const chartEvents = chartEventsFromReboundBottom(trend.events)
+    .filter((event) => visibleDates.has(event.date) && selectedDates.has(event.date));
   const timingEvents = timingEventEntries(trend.events)
-    .filter((entry) => selected.some((row) => row["日期"] === entry.date));
+    .filter((entry) => visibleDates.has(entry.date));
   const reviews = selected.map((row) => ({
     trade_date: row["日期"],
     values: {
@@ -1528,26 +1873,58 @@ function renderTimingHistory(rows, code, selectedDate) {
       "短期DIFF": row["短期DIFF"]
     }
   })).reverse();
-  const divergences = selected
-    .flatMap((row) => ["长期", "中期", "短期"].map((period) => (
-      period === "长期" && row[`${period}背离`] === "疑似底背离"
-        ? ""
-        : row[`${period}背离`] ? `${shortDate(row["日期"])} ${period}${row[`${period}背离`]}` : ""
-    )))
-    .filter(Boolean);
+  const divergences = timingDivergenceNotes(recentRows);
   target.innerHTML = "";
   const heading = document.createElement("div");
   heading.className = "timing-history-head";
-  heading.innerHTML = `<strong>${name} · 近${TIMING_HISTORY_DAYS}日 DIFF</strong><span>${divergences.length ? divergences.join(" / ") : "底背离事件见图下说明"}</span>`;
+  heading.innerHTML = `<strong>${name} · 近${selected.length}日 DIFF</strong><span>${divergences.length ? divergences.join(" / ") : "近20日无长期/中期疑似背离"}</span>`;
   target.append(heading, renderLineChart({
     title: `${name} 三周期 DIFF`,
     series: [
       { key: "长期DIFF", label: "长期", color: "#315f8c", precision: 2 },
       { key: "中期DIFF", label: "中期", color: "#a66a18", precision: 2 },
-      { key: "短期DIFF", label: "短期", color: "#b34034", precision: 2 }
+      { key: "短期DIFF", label: "短期", color: "#111111", precision: 2 }
     ],
     events: chartEvents
-  }, reviews, { width: 760, height: 220, includeZero: true }), createTimingEventStrip(timingEvents));
+  }, reviews, { width: 720, height: 260, includeZero: true }), createTimingEventStrip(timingEvents, VISIBLE_DIVERGENCE_DAYS));
+  target.hidden = false;
+}
+
+function renderTimingTrend(rows, code, selectedDate, windowDays, onSelectDate) {
+  const target = el("marketTimingTrend");
+  const history = timingRowsForCode(rows, code, selectedDate);
+  const points = timingPricePoints(history, windowDays);
+  const phaseSegments = timingPhaseSegments(points);
+  const pointDates = new Set(points.map((point) => point.date));
+  const topEvents = activeLongTopConfirmations(history);
+  const chartEvents = chartEventsFromLongTop(topEvents)
+    .filter((event) => pointDates.has(event.date));
+  const name = history[0]?.["指数名称"] || code;
+  const reviews = points.map((point) => ({
+    trade_date: point.date,
+    values: { "收盘价": point.close, "综合趋势": point.trend }
+  })).reverse();
+  target.innerHTML = "";
+  renderTimingSpecialState(topEvents);
+  const heading = document.createElement("div");
+  heading.className = "timing-history-head";
+  heading.innerHTML = `<strong>${name} · 近${points.length}日收盘走势</strong><span>红：上升趋势；橙：尝试反弹；绿：其余状态</span>`;
+  target.append(heading, renderLineChart({
+    title: `${name} 收盘走势`,
+    series: [{
+      key: "收盘价",
+      label: "收盘价",
+      color: "#28705a",
+      precision: 2,
+      segmentColor: (review) => timingTrendColor(review.values?.["综合趋势"])
+    }],
+    events: chartEvents,
+    onEventSelect: (event) => onSelectDate(event.date),
+    phaseSegments,
+    showPhaseTrack: true,
+    tooltipExtra: (review) => `综合趋势：${review.values?.["综合趋势"] || "趋势待定"}`,
+    pointLabel: (review, series) => `${chartPointTitle(review, series)} · ${review.values?.["综合趋势"] || "趋势待定"}`
+  }, reviews, { width: 720, height: 280, compactScale: true, showValueAxis: true }));
   target.hidden = false;
 }
 
@@ -1561,41 +1938,89 @@ function renderMarketTiming(payload) {
   }
   const dates = [...new Set(rows.map((row) => row["日期"]))].sort().reverse();
   const select = el("marketTimingSelect");
+  const previousButton = el("marketTimingPrevious");
+  const nextButton = el("marketTimingNext");
+  const windowTarget = el("marketTimingWindow");
+  let requestedWindow = DEFAULT_TIMING_WINDOW;
+  let selectedCode = "";
   select.innerHTML = "";
   dates.forEach((date) => {
     const option = document.createElement("option");
     option.value = date;
-    option.textContent = shortDate(date);
+    option.textContent = date;
     option.selected = date === timing.target_date;
     select.append(option);
   });
   const renderForDate = (selectedDate) => {
     const latestRows = rows.filter((row) => row["日期"] === selectedDate);
     if (!latestRows.length) return;
-    el("marketTimingDate").textContent = `${shortDate(selectedDate)} · Tushare 日线 · DIFF / 0轴`;
+    select.value = selectedDate;
+    const activeCode = latestRows.some((row) => row["指数代码"] === selectedCode)
+      ? selectedCode
+      : latestRows[0]["指数代码"];
+    const referenceHistory = timingRowsForCode(rows, activeCode, selectedDate);
+    const windowDays = timingWindowDays(requestedWindow, referenceHistory.length);
+    const navigation = timingDateNavigation(dates, selectedDate);
+    previousButton.disabled = !navigation.previous;
+    nextButton.disabled = !navigation.next;
+    previousButton.onclick = () => renderForDate(navigation.previous);
+    nextButton.onclick = () => renderForDate(navigation.next);
+    el("marketTimingDate").textContent = `${selectedDate} · Tushare 日线 · DIFF / 0轴`;
+    windowTarget.innerHTML = "";
+    TIMING_WINDOW_OPTIONS.forEach((days) => {
+      const button = document.createElement("button");
+      const available = days <= referenceHistory.length;
+      button.type = "button";
+      button.className = "timing-window-button";
+      button.textContent = `${days}日`;
+      button.disabled = !available;
+      button.setAttribute("aria-pressed", String(available && days === windowDays));
+      if (available && days === windowDays) button.classList.add("is-selected");
+      button.addEventListener("click", () => {
+        requestedWindow = days;
+        renderForDate(selectedDate);
+      });
+      windowTarget.append(button);
+    });
     const target = el("marketTimingMatrix");
     target.innerHTML = "";
     const header = document.createElement("div");
     header.className = "timing-row timing-header";
     header.innerHTML = "<span>指数</span><span>长期 21/34</span><span>中期 5/13</span><span>短期 1/5</span>";
     target.append(header);
+    const items = new Map();
+    const selectIndex = (code) => {
+      selectedCode = code;
+      items.forEach((item, itemCode) => {
+        const selected = itemCode === code;
+        item.classList.toggle("is-selected", selected);
+        item.setAttribute("aria-pressed", String(selected));
+      });
+      renderTimingTrend(rows, code, selectedDate, windowDays, (eventDate) => {
+        renderForDate(eventDate);
+        panel.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      renderTimingHistory(rows, code, selectedDate, windowDays);
+    };
     latestRows.forEach((row) => {
       const indexRows = timingRowsForCode(rows, row["指数代码"], selectedDate);
       const trend = timingTrend(indexRows);
       const item = document.createElement("button");
       item.type = "button";
       item.className = "timing-row timing-data-row";
+      item.setAttribute("aria-pressed", "false");
       const cells = ["长期", "中期", "短期"].map((period) => {
         const state = row[`${period}状态`] || "平";
         const diff = Number(row[`${period}DIFF`]);
-        const divergence = row[`${period}背离`];
+        const divergence = period === "短期" ? "" : row[`${period}背离`];
         return `<span class="timing-signal ${timingStateClass(state)}"><b>${state}</b><em>${Number.isFinite(diff) ? diff.toFixed(2) : "--"}</em>${divergence ? `<i>${divergence.replace("疑似", "")}</i>` : ""}</span>`;
       });
       item.innerHTML = `<strong>${row["指数名称"]}<span class="trend-badge ${trend.className}">${trend.label}</span></strong>${cells.join("")}`;
-      item.addEventListener("click", () => renderTimingHistory(rows, row["指数代码"], selectedDate));
+      item.addEventListener("click", () => selectIndex(row["指数代码"]));
+      items.set(row["指数代码"], item);
       target.append(item);
     });
-    renderTimingHistory(rows, latestRows[0]["指数代码"], selectedDate);
+    selectIndex(activeCode);
   };
   if (!dates.length) {
     panel.hidden = true;
@@ -1765,11 +2190,25 @@ function boot() {
 
 if (globalThis.__AI_DAILY_REVIEW_TEST__) {
   globalThis.__AI_DAILY_REVIEW_TEST_API__ = {
-    buildLongBottomEvents,
-    chartEventsFromLongBottom,
+    bindChartEventActivation,
+    buildReboundBottomEvents,
+    buildLongTopEvents,
+    activeLongTopConfirmations,
+    chartEventsFromReboundBottom,
+    chartEventsFromLongTop,
     timingEventEntries,
     timingTrend,
-    resolvedTimingState
+    timingPhase,
+    timingDivergenceNotes,
+    timingDateNavigation,
+    timingPhaseSegments,
+    timingPhaseTrackGeometry,
+    timingValueAxisTicks,
+    recentTimingDates,
+    timingWindowDays,
+    resolvedTimingState,
+    timingPricePoints,
+    timingTrendColor
   };
 }
 
@@ -1830,11 +2269,31 @@ if (document.readyState === "loading") {
             <h2>市场时机模型</h2>
             <label class="timing-date-control">日期
               <select id="marketTimingSelect" aria-label="选择市场时机模型日期"></select>
+              <button id="marketTimingPrevious" type="button" aria-label="上一个交易日">←</button>
+              <button id="marketTimingNext" type="button" aria-label="下一个交易日">→</button>
             </label>
+            <div id="marketTimingWindow" class="timing-window-control" aria-label="选择图表时间范围"></div>
             <span id="marketTimingDate">DIFF / 0轴</span>
           </div>
-          <div id="marketTimingMatrix" class="market-timing-matrix"></div>
-          <div id="marketTimingHistory" class="market-timing-history" hidden></div>
+          <div class="market-timing-layout">
+            <div class="market-timing-left">
+              <div id="marketTimingMatrix" class="market-timing-matrix"></div>
+              <div class="timing-guidance-panel">
+                <section>
+                  <strong>特殊状态</strong>
+                  <div id="marketTimingSpecialState" class="timing-special-state"></div>
+                </section>
+                <section>
+                  <strong>交易建议</strong>
+                  <div class="timing-advice-placeholder">规则待定义</div>
+                </section>
+              </div>
+            </div>
+            <div class="market-timing-charts">
+              <div id="marketTimingTrend" class="market-timing-trend" hidden></div>
+              <div id="marketTimingHistory" class="market-timing-history" hidden></div>
+            </div>
+          </div>
         </section>
 
         <section class="index-strength-panel">
