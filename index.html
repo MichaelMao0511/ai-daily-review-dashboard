@@ -178,10 +178,10 @@ h3 {
 
 .timing-data-row > strong,
 .timing-signal {
-  min-height: 48px;
+  min-height: 44px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 6px 8px;
   background: var(--soft);
 }
 
@@ -189,8 +189,9 @@ h3 {
   display: flex;
   align-items: flex-start;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   color: var(--ink);
+  font-size: 15px;
 }
 
 .timing-signal {
@@ -200,8 +201,8 @@ h3 {
   gap: 2px 8px;
 }
 
-.timing-signal b { font-size: 17px; }
-.timing-signal em { justify-self: end; color: var(--muted); font-style: normal; font-variant-numeric: tabular-nums; }
+.timing-signal b { font-size: 15px; }
+.timing-signal em { justify-self: end; color: var(--muted); font-size: 12px; font-style: normal; font-variant-numeric: tabular-nums; }
 .timing-signal i { grid-column: 1 / -1; color: var(--warn); font-size: 11px; font-style: normal; }
 .timing-long b { color: #b34034; }
 .timing-short b { color: #28705a; }
@@ -212,15 +213,15 @@ h3 {
   width: fit-content;
   border-radius: 999px;
   padding: 2px 6px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   line-height: 1.2;
 }
 
-.trend-rising { background: #e4f1e9; color: #1d6a4e; }
+.trend-rising { background: #f8e3e0; color: #a53d32; }
 .trend-blocked { background: #f8ecd5; color: #986019; }
-.trend-falling { background: #f8e3e0; color: #a53d32; }
-.trend-rebound { background: #e2edf7; color: #315f8c; }
+.trend-falling { background: #e4f1e9; color: #1d6a4e; }
+.trend-rebound { background: #fcebea; color: #b34034; }
 .trend-pending { background: #ece9e2; color: var(--muted); }
 
 .market-timing-history {
@@ -232,6 +233,13 @@ h3 {
 
 .timing-history-head { display: grid; gap: 4px; margin-bottom: 8px; }
 .timing-history-head span { color: var(--muted); font-size: 12px; }
+.timing-event-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 8px; margin-top: 8px; color: var(--muted); font-size: 11px; line-height: 1.35; }
+.timing-event-title { color: var(--ink); font-weight: 700; }
+.timing-event { padding: 1px 5px; border-radius: 4px; }
+.timing-event-candidate { color: #704080; background: #f0e8f3; }
+.timing-event-confirmed { color: #315f8c; background: #e2edf7; }
+.timing-event-invalidated { color: #77726c; background: #ece9e2; }
+.timing-event-empty { color: var(--muted); }
 .zero-axis-label { fill: var(--muted); font-size: 11px; font-weight: 700; text-anchor: end; }
 
 .secondary-chart-panel {
@@ -748,7 +756,7 @@ summary {
 
   .timing-data-row > strong,
   .timing-signal {
-    padding: 7px;
+    padding: 6px;
   }
 
   .chart-grid {
@@ -1146,17 +1154,11 @@ function renderChartEvent(svg, event, point, pad) {
     });
     marker.append(title);
     svg.append(marker);
-    const label = svgEl("text", { x: point.x, y: pad.top + 25, class: "chart-event-label chart-event-confirmed-label" });
-    label.textContent = "确认";
-    svg.append(label);
     return;
   }
   const marker = svgEl("circle", { cx: point.x, cy: point.y, r: 5, class: "chart-event-marker chart-event-candidate" });
   marker.append(title);
   svg.append(marker);
-  const label = svgEl("text", { x: point.x, y: Math.max(pad.top + 12, point.y - 9), class: "chart-event-label" });
-  label.textContent = "候选";
-  svg.append(label);
 }
 
 function renderLineChart(spec, reviews, options = {}) {
@@ -1259,14 +1261,6 @@ function renderLineChart(spec, reviews, options = {}) {
   const endLabel = svgEl("text", { x: width - pad.right, y: height - 8, class: "axis-label axis-label-end" });
   endLabel.textContent = shortDate(lastDate);
   svg.append(startLabel, endLabel);
-
-  chartEvents.forEach((event) => {
-    const index = chronological.findIndex((review) => (review.trade_date || review.values?.["时间"]) === event.date);
-    if (index <= 0 || index >= chronological.length - 1) return;
-    const label = svgEl("text", { x: xScale(index), y: height - 8, class: "axis-label event-axis-label" });
-    label.textContent = shortDate(event.date);
-    svg.append(label);
-  });
 
   chronological.forEach((review, index) => {
     const left = index === 0 ? pad.left : xScale(index) - xStep / 2;
@@ -1467,12 +1461,53 @@ function timingTrend(rows) {
 
 function chartEventsFromLongBottom(events) {
   return events.flatMap((event) => {
+    if (event.invalidatedDate) return [];
     const markers = [{ date: event.candidateDate, kind: "candidate", label: "底背离候选", seriesKey: "长期DIFF" }];
     if (event.confirmedDate) {
       markers.push({ date: event.confirmedDate, kind: "confirmed", label: "确认→尝试反弹", seriesKey: "长期DIFF" });
     }
     return markers;
   });
+}
+
+function timingEventEntries(events) {
+  return events.flatMap((event) => {
+    if (event.invalidatedDate) {
+      return [{
+        date: event.candidateDate,
+        kind: "invalidated",
+        label: `${shortDate(event.candidateDate)} 底背离候选，${shortDate(event.invalidatedDate)} 已失效`
+      }];
+    }
+    const entries = [{ date: event.candidateDate, kind: "candidate", label: `${shortDate(event.candidateDate)} 底背离候选` }];
+    if (event.confirmedDate) {
+      entries.push({ date: event.confirmedDate, kind: "confirmed", label: `${shortDate(event.confirmedDate)} 确认反弹` });
+    }
+    return entries;
+  });
+}
+
+function createTimingEventStrip(entries) {
+  const strip = document.createElement("div");
+  strip.className = "timing-event-strip";
+  const title = document.createElement("span");
+  title.className = "timing-event-title";
+  title.textContent = "背离事件";
+  strip.append(title);
+  if (!entries.length) {
+    const empty = document.createElement("span");
+    empty.className = "timing-event-empty";
+    empty.textContent = "近40日无底背离事件";
+    strip.append(empty);
+    return strip;
+  }
+  entries.forEach((entry) => {
+    const item = document.createElement("span");
+    item.className = `timing-event timing-event-${entry.kind}`;
+    item.textContent = entry.label;
+    strip.append(item);
+  });
+  return strip;
 }
 
 function renderTimingHistory(rows, code, selectedDate) {
@@ -1483,6 +1518,8 @@ function renderTimingHistory(rows, code, selectedDate) {
   const trend = timingTrend(history);
   const chartEvents = chartEventsFromLongBottom(trend.events)
     .filter((event) => selected.some((row) => row["日期"] === event.date));
+  const timingEvents = timingEventEntries(trend.events)
+    .filter((entry) => selected.some((row) => row["日期"] === entry.date));
   const reviews = selected.map((row) => ({
     trade_date: row["日期"],
     values: {
@@ -1498,12 +1535,10 @@ function renderTimingHistory(rows, code, selectedDate) {
         : row[`${period}背离`] ? `${shortDate(row["日期"])} ${period}${row[`${period}背离`]}` : ""
     )))
     .filter(Boolean);
-  const eventNotes = chartEvents.map((event) => `${shortDate(event.date)} ${event.label}`);
-  const notes = [...divergences, ...eventNotes];
   target.innerHTML = "";
   const heading = document.createElement("div");
   heading.className = "timing-history-head";
-  heading.innerHTML = `<strong>${name} · 近${TIMING_HISTORY_DAYS}日 DIFF</strong><span>${notes.length ? notes.join(" / ") : `近${TIMING_HISTORY_DAYS}日无疑似背离`}</span>`;
+  heading.innerHTML = `<strong>${name} · 近${TIMING_HISTORY_DAYS}日 DIFF</strong><span>${divergences.length ? divergences.join(" / ") : "底背离事件见图下说明"}</span>`;
   target.append(heading, renderLineChart({
     title: `${name} 三周期 DIFF`,
     series: [
@@ -1512,7 +1547,7 @@ function renderTimingHistory(rows, code, selectedDate) {
       { key: "短期DIFF", label: "短期", color: "#b34034", precision: 2 }
     ],
     events: chartEvents
-  }, reviews, { width: 760, height: 220, includeZero: true }));
+  }, reviews, { width: 760, height: 220, includeZero: true }), createTimingEventStrip(timingEvents));
   target.hidden = false;
 }
 
@@ -1731,6 +1766,8 @@ function boot() {
 if (globalThis.__AI_DAILY_REVIEW_TEST__) {
   globalThis.__AI_DAILY_REVIEW_TEST_API__ = {
     buildLongBottomEvents,
+    chartEventsFromLongBottom,
+    timingEventEntries,
     timingTrend,
     resolvedTimingState
   };
