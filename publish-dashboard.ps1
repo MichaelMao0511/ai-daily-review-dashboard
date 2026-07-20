@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 
 $projectRoot = $PSScriptRoot
 $reviewProjectRoot = "D:\codex\traderecord"
